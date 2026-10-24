@@ -10,7 +10,7 @@
     "migrate": "node scripts/migrate.js",
     "db:migrate": "node scripts/migrate.js",
     "db:test": "node scripts/migrate.js",
-    "test": "node scripts/test-crud.js",
+    "test": "node --test test/api.test.js",
     "test:api": "node scripts/test-crud.js"
   },
   "keywords": [

@@ -72,7 +72,7 @@ app.get('/api/health', (_req, res) => {
   const dbHealth = getDbHealth();
   res.status(200).json({
     success: true,
-    message: 'Task Management API is healthy.',
+    message: 'Task Management API is running and healthy.',
     database: dbHealth.type,
     dbStatus: dbHealth.status,
     timestamp: new Date().toISOString(),
