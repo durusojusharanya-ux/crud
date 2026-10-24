@@ -1,413 +1,138 @@
-# Task Management API
+# Task Management API — Full-Stack Deployment & REST API
 
-A production-quality CRUD REST API with JWT User Authentication built with Node.js, Express.js, and SQLite. Designed as an internship assignment demonstrating real-world backend development practices.
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B%20%7C%2022%2B-green?logo=node.js)](https://nodejs.org/)
+[![Express.js](https://img.shields.io/badge/Express-4.18-lightgrey?logo=express)](https://expressjs.com/)
+[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL%20%2F%20SQLite-blue?logo=postgresql)](https://www.postgresql.org/)
+[![JWT](https://img.shields.io/badge/Auth-JWT-orange?logo=jsonwebtokens)](https://jwt.io/)
+[![Deployment](https://img.shields.io/badge/Deployed-Render-brightgreen?logo=render)](https://render.com/)
 
-## Features
-
-- 🔐 JWT-based user authentication (register, login, profile)
-- ✅ Full task CRUD — create, read, update, delete
-- 🗄️ SQLite database — zero cloud setup, works 100% locally
-- 🛡️ Task ownership enforcement — users can only access their own tasks
-- 🔒 Bcrypt password hashing — passwords never stored in plain text
-- 📋 Input validation with express-validator
-- 🎯 Consistent JSON responses with proper HTTP status codes
-- 🚫 SQL injection prevention via parameterized queries
-- 📦 Postman collection included for easy testing
+A production-quality CRUD REST API with JWT User Authentication and persistent hosted database support, designed and prepared for **Internship Task 3 — Full-Stack Deployment**.
 
 ---
 
-## Prerequisites
+## 🌟 Features
 
-- [Node.js](https://nodejs.org/) v18 or higher
-- [npm](https://www.npmjs.com/) (comes with Node.js)
-- [Postman](https://www.postman.com/downloads/) (for testing)
-- No database account, no cloud setup, no API keys needed
+- 🔐 **JWT User Authentication**: Secure registration, login, and `/api/auth/me` profile lookup.
+- 🗄️ **Hosted PostgreSQL & Local SQLite**: Connects to cloud PostgreSQL (`DATABASE_URL`) on Render/Neon/Supabase with SSL, and automatically falls back to SQLite for local offline development.
+- 🔄 **Safe Auto-Migration**: Verifies and provisions database schema on startup with foreign key cascades and constraints.
+- ✅ **Complete Task CRUD**: Create, Read, Update (full/partial), and Delete tasks with strict user ownership isolation.
+- ⏱️ **Activity Audit Timeline**: Tracks task creation, status updates, edits, and deletions via `/api/activities`.
+- 🩺 **Health-Check Endpoint**: `GET /api/health` reports uptime, timestamp, and active database engine.
+- 🛡️ **Production Security**: Parameterized queries to prevent SQL injection, bcrypt password hashing (12 salt rounds), dynamic CORS whitelist for Vercel and localhost.
+- 🚀 **Cloud-Ready**: Dynamic host and port binding (`0.0.0.0:${PORT}`), graceful shutdown on `SIGTERM`, Render Blueprint (`render.yaml`).
 
 ---
 
-## Installation
+## 📋 API Endpoints Reference
+
+### Public Endpoints
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/` | API root metadata and documentation |
+| `GET` | `/api/health` | Health check & database connection status |
+| `POST` | `/api/auth/register` | Register new user account |
+| `POST` | `/api/auth/login` | Authenticate and obtain JWT token |
+
+### Protected Endpoints (Requires `Authorization: Bearer <token>`)
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/auth/me` | Retrieve authenticated user profile |
+| `GET` | `/api/tasks` | Get all tasks belonging to user (supports `?status=&priority=`) |
+| `POST` | `/api/tasks` | Create a new task |
+| `GET` | `/api/tasks/:id` | Get single task details |
+| `PUT` | `/api/tasks/:id` | Update task fields (status, priority, dueDate, title, description) |
+| `DELETE` | `/api/tasks/:id` | Delete task |
+| `GET` | `/api/activities` | Get recent user activity audit trail |
+
+---
+
+## ⚙️ Environment Variables
+
+Configure the following environment variables on your hosting platform (Render):
+
+| Variable | Required in Production | Example / Default | Description |
+| :--- | :--- | :--- | :--- |
+| `PORT` | Managed by Render | `10000` or `5000` | Port for the HTTP server to listen on |
+| `NODE_ENV` | Yes | `production` | Environment mode |
+| `JWT_SECRET` | Yes | `a_secure_random_string_min_32_chars` | Secret key for signing JWT tokens |
+| `JWT_EXPIRES_IN`| No | `7d` | Token expiry duration |
+| `DATABASE_URL` | **Yes (PostgreSQL)** | `postgresql://user:pass@host:5432/dbname?sslmode=require` | Hosted PostgreSQL connection string (Neon / Render Postgres / Supabase) |
+| `FRONTEND_URL` | Recommended | `https://your-frontend.vercel.app` | Allowed CORS origin for the Vercel frontend |
+
+> ⚠️ **Security Warning**: Never commit actual database connection strings or JWT secrets to Git. Always configure them in platform environment settings.
+
+---
+
+## 🚀 Deployment Guide: Backend on Render
+
+### Option A: Using Render Blueprint (Recommended — 1-Click Provisioning)
+1. Fork or push this repository to your GitHub account: `https://github.com/durusojusharanya-ux/crud`.
+2. Log in to [Render](https://dashboard.render.com/).
+3. Click **New +** ➔ **Blueprint**.
+4. Select your `crud` repository.
+5. Render reads `render.yaml` and automatically provisions:
+   - A **Free PostgreSQL Database** (`taskflow-postgres`).
+   - A **Node.js Web Service** (`taskflow-crud-api`).
+   - Automatically injects `DATABASE_URL` and creates a random `JWT_SECRET`!
+6. Click **Apply**. Once built, your backend URL will be live at `https://<your-service-name>.onrender.com`.
+
+### Option B: Manual Web Service Setup
+1. In the Render Dashboard, click **New +** ➔ **Web Service**.
+2. Connect your GitHub repository: `durusojusharanya-ux/crud`.
+3. Fill in the following settings:
+   - **Name**: `taskflow-crud-api`
+   - **Environment**: `Node`
+   - **Branch**: `main`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start` (or `node src/server.js`)
+   - **Instance Type**: `Free`
+4. Under **Environment Variables**, add:
+   - `NODE_ENV` = `production`
+   - `JWT_SECRET` = `<any secure random 32+ character string>`
+   - `DATABASE_URL` = `<Your hosted PostgreSQL URL from Neon or Render>`
+   - `FRONTEND_URL` = `<Your Vercel frontend domain>`
+5. Click **Create Web Service**.
+
+---
+
+## 🗄️ Hosted PostgreSQL Setup (Free Tier)
+
+### Free Option 1: Neon (neon.tech)
+1. Go to [neon.tech](https://neon.tech/) and sign up for a free account.
+2. Click **New Project** and name it `taskflow`.
+3. Copy the **Connection Details** connection string (select **Node.js** or **Direct connection**):
+   ```
+   postgresql://username:password@ep-sample-12345.us-east-2.aws.neon.tech/taskflow?sslmode=require
+   ```
+4. Paste this into your Render Web Service as the `DATABASE_URL` environment variable.
+
+### Free Option 2: Render PostgreSQL
+1. On the Render Dashboard, click **New +** ➔ **PostgreSQL**.
+2. Name it `taskflow-db` and select the **Free** tier.
+3. Once created, copy the **Internal Database URL** (if backend is on Render) or **External Database URL**.
+4. Set it as `DATABASE_URL` in your backend Web Service.
+
+---
+
+## 🧪 Local Testing & Verification
 
 ```bash
-# 1. Clone the repository (or navigate to the project folder)
-cd task-management-api
-
-# 2. Install dependencies
+# 1. Install dependencies
 npm install
 
-# 3. Create your environment file
-copy .env.example .env        # Windows
-# cp .env.example .env        # macOS / Linux
-```
+# 2. Run schema migration check
+npm run db:migrate
 
----
-
-## Environment Setup
-
-Open `.env` and update the values:
-
-```env
-PORT=5000
-NODE_ENV=development
-JWT_SECRET=replace_with_a_long_random_secret_at_least_32_characters
-JWT_EXPIRES_IN=1d
-```
-
-> **Important:** Change `JWT_SECRET` to a long, random string before deploying. Never commit `.env` to Git.
-
-**Generate a strong secret (optional):**
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-
----
-
-## How SQLite Works (No Setup Needed)
-
-When you run `npm run dev`, the server:
-
-1. Checks if the `data/` folder exists — creates it if not.
-2. Opens (or creates) `data/tasks.db`.
-3. Runs `CREATE TABLE IF NOT EXISTS` for `users` and `tasks`.
-4. Foreign keys and WAL mode are enabled automatically.
-
-**You never need to run SQL commands manually.**
-
----
-
-## Starting the Server
-
-```bash
-# Development mode (auto-restarts on file changes)
+# 3. Start local development server
 npm run dev
 
-# Production mode
-npm start
-```
-
-You should see:
-```
-✅ SQLite database initialized at: .../data/tasks.db
-🚀 Server running on http://localhost:5000
-📋 Health check: http://localhost:5000/api/health
+# 4. Run automated test suite (Tests health, register, login, profile, and complete task CRUD)
+npm run test:api
 ```
 
 ---
 
-## API Endpoints
-
-### Base URL
-```
-http://localhost:5000
-```
-
-### Health Check
-
-| Method | Endpoint       | Auth | Description          |
-|--------|----------------|------|----------------------|
-| GET    | `/api/health`  | No   | Check server status  |
-
-### Authentication
-
-| Method | Endpoint              | Auth | Description                    |
-|--------|-----------------------|------|--------------------------------|
-| POST   | `/api/auth/register`  | No   | Create a new user account      |
-| POST   | `/api/auth/login`     | No   | Log in and receive a JWT       |
-| GET    | `/api/auth/me`        | Yes  | Get authenticated user profile |
-
-### Tasks
-
-| Method | Endpoint          | Auth | Description                       |
-|--------|-------------------|------|-----------------------------------|
-| POST   | `/api/tasks`      | Yes  | Create a new task                 |
-| GET    | `/api/tasks`      | Yes  | List all your tasks               |
-| GET    | `/api/tasks/:id`  | Yes  | Get one task by ID                |
-| PUT    | `/api/tasks/:id`  | Yes  | Update an owned task              |
-| DELETE | `/api/tasks/:id`  | Yes  | Delete an owned task              |
-
-**Optional query parameters for GET /api/tasks:**
-- `?status=pending` — filter by status (`pending`, `in-progress`, `completed`)
-- `?priority=high` — filter by priority (`low`, `medium`, `high`)
-
----
-
-## Example Request Bodies & Responses
-
-### Register — `POST /api/auth/register`
-
-**Request:**
-```json
-{
-  "name": "Jane Doe",
-  "email": "jane@example.com",
-  "password": "password123"
-}
-```
-
-**Response (201 Created):**
-```json
-{
-  "success": true,
-  "message": "Account created successfully.",
-  "data": {
-    "user": {
-      "id": 1,
-      "name": "Jane Doe",
-      "email": "jane@example.com",
-      "createdAt": "2025-01-01T10:00:00.000Z",
-      "updatedAt": "2025-01-01T10:00:00.000Z"
-    },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
-}
-```
-
-### Login — `POST /api/auth/login`
-
-**Request:**
-```json
-{
-  "email": "jane@example.com",
-  "password": "password123"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "message": "Logged in successfully.",
-  "data": {
-    "user": { "id": 1, "name": "Jane Doe", "email": "jane@example.com" },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
-}
-```
-
-### Create Task — `POST /api/tasks`
-
-**Request headers:**
-```
-Authorization: Bearer <your-jwt-token>
-Content-Type: application/json
-```
-
-**Request body:**
-```json
-{
-  "title": "Complete internship assignment",
-  "description": "Build a CRUD REST API with Node.js and SQLite",
-  "status": "in-progress",
-  "priority": "high",
-  "dueDate": "2025-12-31"
-}
-```
-
-**Response (201 Created):**
-```json
-{
-  "success": true,
-  "message": "Task created successfully.",
-  "data": {
-    "task": {
-      "id": 1,
-      "title": "Complete internship assignment",
-      "description": "Build a CRUD REST API with Node.js and SQLite",
-      "status": "in-progress",
-      "priority": "high",
-      "dueDate": "2025-12-31T00:00:00.000Z",
-      "userId": 1,
-      "createdAt": "2025-01-01T10:00:00.000Z",
-      "updatedAt": "2025-01-01T10:00:00.000Z"
-    }
-  }
-}
-```
-
-### Update Task — `PUT /api/tasks/1`
-
-**Request body (only include fields to change):**
-```json
-{
-  "status": "completed"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "message": "Task updated successfully.",
-  "data": { "task": { ... } }
-}
-```
-
----
-
-## JWT Authentication
-
-Protected endpoints require this header:
-
-```
-Authorization: Bearer <token>
-```
-
-- Tokens expire after `1d` (configurable via `JWT_EXPIRES_IN` in `.env`).
-- A `401` response means the token is missing, invalid, or expired.
-- Log in again to get a new token.
-
----
-
-## HTTP Status Codes
-
-| Code | Meaning                          |
-|------|----------------------------------|
-| 200  | Success (read, update, delete)   |
-| 201  | Created (register, create task)  |
-| 400  | Bad request / validation error   |
-| 401  | Unauthenticated                  |
-| 403  | Forbidden                        |
-| 404  | Not found                        |
-| 409  | Conflict (duplicate email)       |
-| 500  | Internal server error            |
-
----
-
-## Postman Testing
-
-### Import the Collection
-
-1. Open Postman.
-2. Click **Import** (top-left).
-3. Select `postman/Task-Management-API.postman_collection.json`.
-4. The collection appears in your sidebar.
-
-### Quick Start Test Flow
-
-1. **Health Check** — verify the server is running.
-2. **Register** — creates your account and auto-saves the JWT token.
-3. **Login** — logs in and refreshes the saved JWT token.
-4. **Create Task** — creates a task and saves the task ID.
-5. **List Tasks** — view all your tasks.
-6. **Get Task by ID** — view the task you created.
-7. **Update Task** — change the status to `completed`.
-8. **Delete Task** — remove the task.
-9. **Error Cases** — test validation and 404 responses.
-
-> The "Register" and "Login" requests include **test scripts** that automatically save the token to the `authToken` collection variable. All protected requests use `{{authToken}}` automatically.
-
----
-
-## Task Fields
-
-| Field         | Type    | Required | Description                                      |
-|---------------|---------|----------|--------------------------------------------------|
-| `title`       | string  | Yes      | Task title (max 255 chars)                       |
-| `description` | string  | No       | Optional details (max 1000 chars)                |
-| `status`      | string  | No       | `pending` (default), `in-progress`, `completed`  |
-| `priority`    | string  | No       | `low`, `medium` (default), `high`                |
-| `dueDate`     | string  | No       | ISO 8601 date (e.g. `2025-12-31`)                |
-
----
-
-## Troubleshooting
-
-**`Error: Cannot find module 'better-sqlite3'`**
-```bash
-npm install
-```
-
-**`Error: JWT_SECRET is not defined`**
-- Make sure you created `.env` from `.env.example` and set `JWT_SECRET`.
-
-**`Port 5000 is already in use`**
-- Change `PORT=5001` in `.env`, or kill the process using port 5000.
-
-**`401 Unauthorized` on protected endpoints**
-- Run the Login request first so the token is saved to `{{authToken}}`.
-- Check that the token hasn't expired (default: 1 day).
-
-**SQLite database issues**
-- Delete `data/tasks.db` and restart the server — it will be recreated fresh.
-
-**`better-sqlite3` build error on Windows**
-```bash
-npm install --global windows-build-tools
-npm install
-```
-Or install [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
-
----
-
-## Project Structure
-
-```
-task-management-api/
-├── src/
-│   ├── config/
-│   │   └── db.js                 # SQLite connection + table creation
-│   ├── controllers/
-│   │   ├── authController.js     # Register, login, getMe
-│   │   └── taskController.js     # CRUD task operations
-│   ├── middleware/
-│   │   ├── authMiddleware.js     # JWT verification
-│   │   ├── errorMiddleware.js    # Global error handler + 404
-│   │   └── validateRequest.js   # express-validator runner
-│   ├── routes/
-│   │   ├── authRoutes.js
-│   │   └── taskRoutes.js
-│   ├── validators/
-│   │   ├── authValidators.js
-│   │   └── taskValidators.js
-│   ├── app.js                   # Express app setup
-│   └── server.js                # Entry point
-├── data/
-│   └── tasks.db                 # Created automatically (git-ignored)
-├── postman/
-│   └── Task-Management-API.postman_collection.json
-├── .env.example
-├── .gitignore
-├── package.json
-└── README.md
-```
-
----
-
-## Publishing to GitHub
-
-> ⚠️ Review all files before pushing. The `.gitignore` excludes `.env` and `data/tasks.db` — never commit those.
-
-```bash
-# 1. Initialize a git repository
-git init
-
-# 2. Add all files
-git add .
-
-# 3. Commit
-git commit -m "feat: initial CRUD REST API with JWT authentication and SQLite"
-
-# 4. Create a new repository on GitHub (https://github.com/new)
-#    Do NOT initialize it with a README
-
-# 5. Link your local repo to GitHub (replace with your details)
-git remote add origin https://github.com/YOUR_USERNAME/task-management-api.git
-
-# 6. Push to GitHub
-git branch -M main
-git push -u origin main
-```
-
-### Make the repository public for your internship submission:
-1. Go to your repository on GitHub.
-2. Click **Settings** → **General** → scroll to **Danger Zone**.
-3. Click **Change repository visibility** → **Make public**.
-
----
-
-## Security Notes
-
-- Passwords are hashed with bcrypt (12 salt rounds) — plain-text passwords are never stored.
-- JWTs contain only the user ID — no sensitive data.
-- All SQL queries use parameterized statements — SQL injection is prevented.
-- Task ownership is enforced at the database level (`WHERE id = ? AND userId = ?`).
-- Secrets and the database file are excluded from Git via `.gitignore`.
+## 👩‍💻 Author & Submission
+- **Intern**: Sharanya
+- **Repository**: [https://github.com/durusojusharanya-ux/crud](https://github.com/durusojusharanya-ux/crud)
+- **Internship Task**: Task 3 — Full-Stack Deployment
